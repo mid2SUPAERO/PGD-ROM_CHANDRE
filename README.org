@@ -3,9 +3,11 @@
 
 Author: Oriol CHANDRE-VILA.
 
+Advisors: Joseph MORLIER and Sylvain DUBREUIL. 
+
 ISAE-SUPAERO, 2018. 
 
-Département Mécanique des Structures et Matériaux (DMSM).
+Département Mécanique des Structures et Matériaux (DMSM) et ONERA.
 
 This project focuses the use of Reduced Order Models to lighten the computational requirements in fluid-structure problem simulations. Proper Orthogonal Decomposition and Proper Generalized Decomposition methodologies are studied and applied in a Steady Advection-Diffusion problem for 2D and non-homogeneous Dirichlet boundary conditions. Thanks to the above-mentioned approaches, important reductions in computing time have been achieved.
 
