@@ -8,3 +8,11 @@ ISAE-SUPAERO, 2018.
 Département Mécanique des Structures et Matériaux (DMSM).
 
 This project focuses the use of Reduced Order Models to lighten the computational requirements in fluid-structure problem simulations. Proper Orthogonal Decomposition and Proper Generalized Decomposition methodologies are studied and applied in a Steady Advection-Diffusion problem for 2D and non-homogeneous Dirichlet boundary conditions. Thanks to the above-mentioned approaches, important reductions in computing time have been achieved.
+
+1. Codes: all the live codes can be found inside.
+
+2. Documentation: all the bibliography used for the project can be found inside.
+
+3. Presentation: the support for the presentation can be found inside.
+
+4. Report: the editable and the PDF file of the written report can be found inside.
