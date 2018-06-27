@@ -1,4 +1,5 @@
-#- TITLE: Which Powerpoint file should you use?
+#+TITLE: Which Powerpoint file should you use?
+#+OPTIONS: toc:nil num:nil
 
 1. PIR_OriolCHANDRE.pptx if version 2010
 
