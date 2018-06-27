@@ -1,0 +1,419 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Offline</title><meta name="generator" content="MATLAB 9.3"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2018-06-27"><meta name="DC.source" content="Offline.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">PGD CODE FOR ADVECTION-DIFFUSION EQUATION</a></li><li><a href="#2">Initialization of the problem</a></li><li><a href="#3">Offline step (PGD Solution)</a></li><li><a href="#4">Graphs</a></li></ul></div><h2 id="1">PGD CODE FOR ADVECTION-DIFFUSION EQUATION</h2><p>OFFLINE PHASE This code aims to compute a PGD for the problem of advection-diffusion in a square domain with fixed Dirichlet and Neumann BC. In this approach, the x-axis velocity, y-axis velocity and diffusivity parameter are defined as extra-coordinates of the problem.</p><p>Oriol CHANDRE VILA ISAE-SUPAERO, June 2018</p><pre class="codeinput">clear <span class="string">all</span>; close <span class="string">all</span>; clc;
+warning(<span class="string">'off'</span>);
+</pre><h2 id="2">Initialization of the problem</h2><pre class="codeinput"><span class="comment">% VARIABLES</span>
+<span class="keyword">global</span> num_max_iter max_fp_iter TOL TOL_TILDE ybar;
+TOL = 1.0E-08; <span class="comment">% Tolerance.</span>
+TOL_TILDE = 1.0E-06; <span class="comment">% PGD enrichment tolerance.</span>
+num_max_iter = 1500; <span class="comment">% Max. # of functional pairs for the approximation.</span>
+max_fp_iter = 200; <span class="comment">% Max. # of iterations in the fixed point loop.</span>
+
+<span class="comment">% GEOMETRY</span>
+Lx = 1; Ly = 1; Lv = 0.5; Lk = 0.025;
+Nx = 61; Ny = 61; Nv = 21; Nk = 31;
+x = linspace(0,Lx,Nx)';
+y = linspace(0,Ly,Ny)';
+vx = linspace(0,Lv,Nv)';
+vy = linspace(0,Lv,Nv)';
+k = linspace(0,Lk,Nk)';
+ybar = 0.4;
+
+<span class="comment">% DIRICHLET BC</span>
+Td = zeros(Ny,1); <span class="comment">% Temperature profile in the wall</span>
+<span class="keyword">for</span> j = 1:Ny
+    <span class="keyword">if</span> y(j) &lt; (y(end)/3) || y(j) &gt; (2*y(end)/3)
+        Td(j,1) = 300;
+    <span class="keyword">else</span>
+        Td(j,1) = 300 + 325*(sin(3*pi*abs(y(j)-ybar))+1);
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><h2 id="3">Offline step (PGD Solution)</h2><p>General purpose PGD function with residual minimization, not optimized for efficiency. Adaptation of the code presented in "The Proper Generalized Decomposition for Advanced Numerical Simulation: A primer" written by F. Chinesta, R. Keunings and A. Leygue. The author of the code is A. Leygue.</p><pre class="codeinput">tic
+
+hx = x(2)-x(1); hy = y(2)-y(1); <span class="comment">% x &amp; y mesh grid size</span>
+
+<span class="comment">% 1D OPERATORS ALONG X &amp; Y</span>
+<span class="comment">% Identity matrices</span>
+Mx = speye(Nx); My = speye(Ny);
+<span class="comment">% 1st (upwind scheme) and 2nd (centered scheme) derivatives</span>
+D2x =  spdiags([ones(Nx,1) -2*ones(Nx,1) ones(Nx,1)],[-1 0 1],Nx,Nx)/hx^2;
+D1x =  spdiags([-ones(Nx,1)  ones(Nx,1)],[-1  0],Nx,Nx)/hx;
+D2y =  spdiags([ones(Ny,1) -2*ones(Ny,1) ones(Ny,1)],[-1 0 1],Ny,Ny)/hy^2;
+D1y =  spdiags([-ones(Ny,1)  ones(Ny,1)],[-1  0],Ny,Ny)/hy;
+<span class="comment">% Neumann BC</span>
+D1x(end,end) = 0;
+D1y(1,1) = 0; D1y(end,end) = 0;
+
+<span class="comment">% IDENTITY OPERATORS ALONG U, V &amp; K</span>
+Mv = speye(Nv); Mk = speye(Nk);
+
+<span class="comment">% SOURCE TERM IN A SEPARATED FORM (f(x,y) = 0)</span>
+fx = zeros(Nx,1); fy = zeros(Nx,1);
+<span class="comment">% The extra-coordinates must not affect in the problem definition!</span>
+fvx = ones(Nv,1); fvy = ones(Nv,1); fk = ones(Nk,1);
+
+<span class="comment">% PROBLEM DEFINITION IN A MATRIX OPERATOR FORM:</span>
+<span class="comment">% There will be 5 dimensions (x, y, u, v, k) solved for 2D.</span>
+AA = cell(5,4); <span class="comment">% Operator. dim2: 2 diffusion eq. and 2 advection eq.</span>
+BB = cell(5,1); <span class="comment">% RHS: in this problem is zero.</span>
+GG = cell(5,1); <span class="comment">% A priori known terms, to enforce the Dirichlet BC</span>
+Dirichlet = cell(5,1); <span class="comment">% Dirichlet BC: where to be applied.</span>
+N_NT = cell(5,1); <span class="comment">% Mass matrices.</span>
+
+<span class="comment">% CONSTRUCTION OF THE PROBLEM: (U*D1 - k*D2)*T = 0</span>
+<span class="comment">% x-diffusion (-k*D2x)</span>
+AA{1,1} = -D2x; AA{2,1} = My; AA{3,1} = Mv; AA{4,1} = Mv;
+AA{5,1} = spdiags(k,0,Nk,Nk);
+<span class="comment">% y-diffusion (-k*D2y)</span>
+AA{1,2} = Mx; AA{2,2} = -D2y; AA{3,2} = Mv; AA{4,2} = Mv;
+AA{5,2} = spdiags(k,0,Nk,Nk);
+<span class="comment">% x-advection (u*D1x)</span>
+AA{1,3} = D1x; AA{2,3} = My; AA{3,3} = spdiags(vx,0,Nv,Nv);
+AA{4,3} = Mv; AA{5,3} = Mk;
+<span class="comment">% y-advection (v*D1y)</span>
+AA{1,4} = Mx; AA{2,4} = D1y; AA{3,4} = Mv;
+AA{4,4} = spdiags(vy,0,Nv,Nv); AA{5,4} = Mk;
+<span class="comment">% RHS</span>
+BB{1} = [fx 0*ones(Nx,1)]; BB{2} = [fy ones(Ny,1)];
+BB{3} = [fvx ones(Nv,1)]; BB{4} = [fvy ones(Nv,1)];
+BB{5} = [fk ones(Nk,1)];
+<span class="comment">% GG</span>
+GG{1} = ones(Nx,1); GG{2} = Td; GG{3} = ones(Nv,1);
+GG{4} = ones(Nv,1); GG{5} = ones(Nk,1);
+
+<span class="comment">% Imposition of a Dirichlet BC on the whole boundary: just to remember, in</span>
+<span class="comment">% our problem, x = 1, y = 0 and y = 1 are represented by Neumann BC. The</span>
+<span class="comment">% only Dirichlet BC is located in x = 0.</span>
+Dirichlet{1} = [1];
+N_NT{1} = Mx; N_NT{2} = My; N_NT{3} = Mv; N_NT{4} = Mv; N_NT{5} = Mk;
+
+<span class="comment">% PGD SOLUTION (with stabilization thanks to the upwind scheme)</span>
+[FF] = PGD_SYM(AA,BB,GG,N_NT,Dirichlet);
+temps_Offline = toc
+fprintf(1,<span class="string">'PGD offline Process exited normally\n'</span>);
+save(<span class="string">'WorkSpacePGD_AdvDiffSteady.mat'</span>);
+</pre><pre class="codeoutput">
+temps_Offline =
+
+   2.6126e+03
+
+PGD offline Process exited normally
+</pre><h2 id="4">Graphs</h2><pre class="codeinput">figInt = 0;
+<span class="comment">% NORMALIZATION OF THE COMPUTED FUNCTIONS</span>
+Xnorm = bsxfun(@rdivide,FF{1},sqrt(trapz(x,FF{1}.^2)));
+Ynorm = bsxfun(@rdivide,FF{2},sqrt(trapz(y,FF{2}.^2)));
+Unorm = bsxfun(@rdivide,FF{3},sqrt(trapz(vx,FF{3}.^2)));
+Vnorm = bsxfun(@rdivide,FF{4},sqrt(trapz(vy,FF{4}.^2)));
+Knorm = bsxfun(@rdivide,FF{5},sqrt(trapz(k,FF{5}.^2)));
+
+<span class="keyword">if</span> size(Xnorm,2) &lt; 5
+    j = size(Xnorm,2);
+<span class="keyword">else</span>
+    j = 5;
+<span class="keyword">end</span>
+
+<span class="comment">% G_1^x, X_i PLOT</span>
+figInt = figInt + 1;
+figure(figInt);
+set(gca,<span class="string">'fontsize'</span>,14);
+handles = plot(x,Xnorm(:,1:j));
+legend(handles,[{<span class="string">'G_1^x(x)'</span>} cellfun(@(in) [<span class="string">'X_'</span> num2str(in) <span class="string">'(x)'</span>],<span class="keyword">...</span>
+    num2cell(1:j-1),<span class="string">'uniformoutput'</span>,false)]);
+xlabel(<span class="string">'$x$'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>);
+ylabel(<span class="string">'$\frac{X_i(x)}{\|X_i(x)\| \,\,\, \,\,}$'</span>,<span class="string">'interpreter'</span>,<span class="keyword">...</span>
+    <span class="string">'latex'</span>,<span class="string">'fontsize'</span>,18);
+
+<span class="comment">% G_i^y, Y_i PLOT</span>
+figInt = figInt + 1;
+figure(figInt);
+set(gca,<span class="string">'fontsize'</span>,14);
+handles = plot(y,Ynorm(:,1:j));
+legend(handles,[{<span class="string">'G_1^y(y)'</span>} cellfun(@(in) [<span class="string">'Y_'</span> num2str(in) <span class="string">'(y)'</span>],<span class="keyword">...</span>
+    num2cell(1:j-1),<span class="string">'uniformoutput'</span>,false)]);
+xlabel(<span class="string">'$y$'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>);
+ylabel(<span class="string">'$\frac{Y_i(y)}{\|Y_i(y)\| \,\,\, \,\,}$'</span>,<span class="string">'interpreter'</span>,<span class="keyword">...</span>
+    <span class="string">'latex'</span>,<span class="string">'fontsize'</span>,18);
+
+<span class="comment">% G_i^u, U_i PLOT</span>
+figInt = figInt + 1;
+figure(figInt);
+set(gca,<span class="string">'fontsize'</span>,14);
+handles = plot(vx,Unorm(:,1:j));
+legend(handles,[{<span class="string">'G_1^u(u)'</span>} cellfun(@(in) [<span class="string">'U_'</span> num2str(in) <span class="string">'(u)'</span>],<span class="keyword">...</span>
+    num2cell(1:j-1),<span class="string">'uniformoutput'</span>,false)]);
+xlabel(<span class="string">'$u$'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>);
+ylabel(<span class="string">'$\frac{U_i(u)}{\|U_i(u)\| \,\,\, \,\,}$'</span>,<span class="string">'interpreter'</span>,<span class="keyword">...</span>
+    <span class="string">'latex'</span>,<span class="string">'fontsize'</span>,18);
+
+<span class="comment">% G_i^v, V_i PLOT</span>
+figInt = figInt + 1;
+figure(figInt);
+set(gca,<span class="string">'fontsize'</span>,14);
+handles = plot(vy,Vnorm(:,1:j));
+legend(handles,[{<span class="string">'G_1^v(v)'</span>} cellfun(@(in) [<span class="string">'V_'</span> num2str(in) <span class="string">'(v)'</span>],<span class="keyword">...</span>
+    num2cell(1:j-1),<span class="string">'uniformoutput'</span>,false)]);
+xlabel(<span class="string">'$u$'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>);
+ylabel(<span class="string">'$\frac{V_i(u)}{\|V_i(u)\| \,\,\, \,\,}$'</span>,<span class="string">'interpreter'</span>,<span class="keyword">...</span>
+    <span class="string">'latex'</span>,<span class="string">'fontsize'</span>,18);
+
+<span class="comment">% G_i^k, K_i PLOT</span>
+figInt = figInt + 1;
+figure(figInt);
+set(gca,<span class="string">'fontsize'</span>,14);
+handles = plot(k,Knorm(:,1:j));
+legend(handles,[{<span class="string">'G_1^k(k)'</span>} cellfun(@(in) [<span class="string">'K_'</span> num2str(in) <span class="string">'(k)'</span>],<span class="keyword">...</span>
+    num2cell(1:j-1),<span class="string">'uniformoutput'</span>,false)]);
+xlabel(<span class="string">'$k$'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>);
+ylabel(<span class="string">'$\frac{K_i(k)}{\|K_i(k)\| \,\,\, \,\,}$'</span>,<span class="string">'interpreter'</span>,<span class="keyword">...</span>
+    <span class="string">'latex'</span>,<span class="string">'fontsize'</span>,18);
+</pre><img vspace="5" hspace="5" src="Offline_01.png" alt=""> <img vspace="5" hspace="5" src="Offline_02.png" alt=""> <img vspace="5" hspace="5" src="Offline_03.png" alt=""> <img vspace="5" hspace="5" src="Offline_04.png" alt=""> <img vspace="5" hspace="5" src="Offline_05.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2017b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% PGD CODE FOR ADVECTION-DIFFUSION EQUATION
+%
+% OFFLINE PHASE
+% This code aims to compute a PGD for the problem of advection-diffusion in
+% a square domain with fixed Dirichlet and Neumann BC. In this approach,
+% the x-axis velocity, y-axis velocity and diffusivity parameter are
+% defined as extra-coordinates of the problem.
+%
+% Oriol CHANDRE VILA
+% ISAE-SUPAERO, June 2018
+
+clear all; close all; clc;
+warning('off');
+
+%% Initialization of the problem
+
+% VARIABLES
+global num_max_iter max_fp_iter TOL TOL_TILDE ybar;
+TOL = 1.0E-08; % Tolerance.
+TOL_TILDE = 1.0E-06; % PGD enrichment tolerance.
+num_max_iter = 1500; % Max. # of functional pairs for the approximation.
+max_fp_iter = 200; % Max. # of iterations in the fixed point loop.
+
+% GEOMETRY
+Lx = 1; Ly = 1; Lv = 0.5; Lk = 0.025;
+Nx = 61; Ny = 61; Nv = 21; Nk = 31;
+x = linspace(0,Lx,Nx)';
+y = linspace(0,Ly,Ny)';
+vx = linspace(0,Lv,Nv)';
+vy = linspace(0,Lv,Nv)';
+k = linspace(0,Lk,Nk)';
+ybar = 0.4;
+
+% DIRICHLET BC
+Td = zeros(Ny,1); % Temperature profile in the wall
+for j = 1:Ny
+    if y(j) < (y(end)/3) || y(j) > (2*y(end)/3)
+        Td(j,1) = 300;
+    else
+        Td(j,1) = 300 + 325*(sin(3*pi*abs(y(j)-ybar))+1);
+    end
+end
+%% Offline step (PGD Solution)
+% General purpose PGD function with residual minimization, not optimized
+% for efficiency.
+% Adaptation of the code presented in "The Proper Generalized Decomposition
+% for Advanced Numerical Simulation: A primer" written by F. Chinesta, R.
+% Keunings and A. Leygue. The author of the code is A. Leygue.
+tic
+
+hx = x(2)-x(1); hy = y(2)-y(1); % x & y mesh grid size
+
+% 1D OPERATORS ALONG X & Y
+% Identity matrices
+Mx = speye(Nx); My = speye(Ny);
+% 1st (upwind scheme) and 2nd (centered scheme) derivatives
+D2x =  spdiags([ones(Nx,1) -2*ones(Nx,1) ones(Nx,1)],[-1 0 1],Nx,Nx)/hx^2;
+D1x =  spdiags([-ones(Nx,1)  ones(Nx,1)],[-1  0],Nx,Nx)/hx;
+D2y =  spdiags([ones(Ny,1) -2*ones(Ny,1) ones(Ny,1)],[-1 0 1],Ny,Ny)/hy^2;
+D1y =  spdiags([-ones(Ny,1)  ones(Ny,1)],[-1  0],Ny,Ny)/hy;
+% Neumann BC
+D1x(end,end) = 0;
+D1y(1,1) = 0; D1y(end,end) = 0;
+
+% IDENTITY OPERATORS ALONG U, V & K
+Mv = speye(Nv); Mk = speye(Nk);
+
+% SOURCE TERM IN A SEPARATED FORM (f(x,y) = 0)
+fx = zeros(Nx,1); fy = zeros(Nx,1);
+% The extra-coordinates must not affect in the problem definition!
+fvx = ones(Nv,1); fvy = ones(Nv,1); fk = ones(Nk,1);
+
+% PROBLEM DEFINITION IN A MATRIX OPERATOR FORM:
+% There will be 5 dimensions (x, y, u, v, k) solved for 2D.
+AA = cell(5,4); % Operator. dim2: 2 diffusion eq. and 2 advection eq.
+BB = cell(5,1); % RHS: in this problem is zero.
+GG = cell(5,1); % A priori known terms, to enforce the Dirichlet BC
+Dirichlet = cell(5,1); % Dirichlet BC: where to be applied.
+N_NT = cell(5,1); % Mass matrices.
+
+% CONSTRUCTION OF THE PROBLEM: (U*D1 - k*D2)*T = 0
+% x-diffusion (-k*D2x)
+AA{1,1} = -D2x; AA{2,1} = My; AA{3,1} = Mv; AA{4,1} = Mv;
+AA{5,1} = spdiags(k,0,Nk,Nk);
+% y-diffusion (-k*D2y)
+AA{1,2} = Mx; AA{2,2} = -D2y; AA{3,2} = Mv; AA{4,2} = Mv;
+AA{5,2} = spdiags(k,0,Nk,Nk);
+% x-advection (u*D1x)
+AA{1,3} = D1x; AA{2,3} = My; AA{3,3} = spdiags(vx,0,Nv,Nv);
+AA{4,3} = Mv; AA{5,3} = Mk;
+% y-advection (v*D1y)
+AA{1,4} = Mx; AA{2,4} = D1y; AA{3,4} = Mv;
+AA{4,4} = spdiags(vy,0,Nv,Nv); AA{5,4} = Mk;
+% RHS
+BB{1} = [fx 0*ones(Nx,1)]; BB{2} = [fy ones(Ny,1)];
+BB{3} = [fvx ones(Nv,1)]; BB{4} = [fvy ones(Nv,1)];
+BB{5} = [fk ones(Nk,1)];
+% GG
+GG{1} = ones(Nx,1); GG{2} = Td; GG{3} = ones(Nv,1);
+GG{4} = ones(Nv,1); GG{5} = ones(Nk,1);
+
+% Imposition of a Dirichlet BC on the whole boundary: just to remember, in
+% our problem, x = 1, y = 0 and y = 1 are represented by Neumann BC. The
+% only Dirichlet BC is located in x = 0.
+Dirichlet{1} = [1];
+N_NT{1} = Mx; N_NT{2} = My; N_NT{3} = Mv; N_NT{4} = Mv; N_NT{5} = Mk;
+
+% PGD SOLUTION (with stabilization thanks to the upwind scheme)
+[FF] = PGD_SYM(AA,BB,GG,N_NT,Dirichlet);
+temps_Offline = toc
+fprintf(1,'PGD offline Process exited normally\n');
+save('WorkSpacePGD_AdvDiffSteady.mat');
+%% Graphs
+figInt = 0;
+% NORMALIZATION OF THE COMPUTED FUNCTIONS
+Xnorm = bsxfun(@rdivide,FF{1},sqrt(trapz(x,FF{1}.^2)));
+Ynorm = bsxfun(@rdivide,FF{2},sqrt(trapz(y,FF{2}.^2)));
+Unorm = bsxfun(@rdivide,FF{3},sqrt(trapz(vx,FF{3}.^2)));
+Vnorm = bsxfun(@rdivide,FF{4},sqrt(trapz(vy,FF{4}.^2)));
+Knorm = bsxfun(@rdivide,FF{5},sqrt(trapz(k,FF{5}.^2)));
+
+if size(Xnorm,2) < 5
+    j = size(Xnorm,2);
+else
+    j = 5;
+end
+
+% G_1^x, X_i PLOT
+figInt = figInt + 1;
+figure(figInt);
+set(gca,'fontsize',14);
+handles = plot(x,Xnorm(:,1:j));
+legend(handles,[{'G_1^x(x)'} cellfun(@(in) ['X_' num2str(in) '(x)'],...
+    num2cell(1:j-1),'uniformoutput',false)]);
+xlabel('$x$','interpreter','latex');
+ylabel('$\frac{X_i(x)}{\|X_i(x)\| \,\,\, \,\,}$','interpreter',...
+    'latex','fontsize',18);
+
+% G_i^y, Y_i PLOT
+figInt = figInt + 1;
+figure(figInt);
+set(gca,'fontsize',14);
+handles = plot(y,Ynorm(:,1:j));
+legend(handles,[{'G_1^y(y)'} cellfun(@(in) ['Y_' num2str(in) '(y)'],...
+    num2cell(1:j-1),'uniformoutput',false)]);
+xlabel('$y$','interpreter','latex');
+ylabel('$\frac{Y_i(y)}{\|Y_i(y)\| \,\,\, \,\,}$','interpreter',...
+    'latex','fontsize',18);
+
+% G_i^u, U_i PLOT
+figInt = figInt + 1;
+figure(figInt);
+set(gca,'fontsize',14);
+handles = plot(vx,Unorm(:,1:j));
+legend(handles,[{'G_1^u(u)'} cellfun(@(in) ['U_' num2str(in) '(u)'],...
+    num2cell(1:j-1),'uniformoutput',false)]);
+xlabel('$u$','interpreter','latex');
+ylabel('$\frac{U_i(u)}{\|U_i(u)\| \,\,\, \,\,}$','interpreter',...
+    'latex','fontsize',18);
+
+% G_i^v, V_i PLOT
+figInt = figInt + 1;
+figure(figInt);
+set(gca,'fontsize',14);
+handles = plot(vy,Vnorm(:,1:j));
+legend(handles,[{'G_1^v(v)'} cellfun(@(in) ['V_' num2str(in) '(v)'],...
+    num2cell(1:j-1),'uniformoutput',false)]);
+xlabel('$u$','interpreter','latex');
+ylabel('$\frac{V_i(u)}{\|V_i(u)\| \,\,\, \,\,}$','interpreter',...
+    'latex','fontsize',18);
+
+% G_i^k, K_i PLOT
+figInt = figInt + 1;
+figure(figInt);
+set(gca,'fontsize',14);
+handles = plot(k,Knorm(:,1:j));
+legend(handles,[{'G_1^k(k)'} cellfun(@(in) ['K_' num2str(in) '(k)'],...
+    num2cell(1:j-1),'uniformoutput',false)]);
+xlabel('$k$','interpreter','latex');
+ylabel('$\frac{K_i(k)}{\|K_i(k)\| \,\,\, \,\,}$','interpreter',...
+    'latex','fontsize',18);
+##### SOURCE END #####
+--></body></html>
