@@ -13,6 +13,12 @@ This project focuses the use of Reduced Order Models to lighten the computationa
 
 1. Codes: all the live codes can be found inside.
 
+    a) PGD for Poisson Eq. 2D
+    
+    b) POD for Steady Advection-Diffusion Problem
+    
+    c) PGD for Steady Advection-Diffusion Problem
+    
 2. Presentation: the support for the presentation can be found inside.
 
 3. Report: the editable and the PDF file of the written report can be found inside.
