@@ -1,0 +1,663 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>AdvectionDiffusion</title><meta name="generator" content="MATLAB 9.3"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2018-06-27"><meta name="DC.source" content="AdvectionDiffusion.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">STEADY ADVECTION-DIFFUSION PROBLEM</a></li><li><a href="#2">Definition of the problem (domain)</a></li><li><a href="#3">Part I: computing the comparison points</a></li><li><a href="#4">Part II: computing ROM</a></li><li><a href="#5">Graphs</a></li></ul></div><h2 id="1">STEADY ADVECTION-DIFFUSION PROBLEM</h2><p>Method of snapshots for Greedy approach. Based on CME 345: Model Reduction course of prof. David Amsallem (Stanford University) Oriol Chandre Vila May 2018</p><pre class="codeinput">clear <span class="string">all</span>; close <span class="string">all</span>; clc;
+warning(<span class="string">'off'</span>);
+</pre><h2 id="2">Definition of the problem (domain)</h2><pre class="codeinput"><span class="keyword">global</span> Nx Ny Lx Ly dx dy x y Ti Tleft;
+Nx = 61;
+Ny = 61;
+Lx = 1;
+Ly = 1;
+dx = Lx/(Nx-1);
+dy = Ly/(Ny-1);
+x = 0:dx:Lx;
+y = 0:dy:Ly;
+Ti = 300;
+Tleft = 950;
+
+<span class="comment">% Parameters u [p(1,:)],kappa [p(2,:)], ybar [p(3,:)]</span>
+<span class="comment">% u     : advection speed in the x-direction</span>
+<span class="comment">% kappa : diffusivity coefficient</span>
+<span class="comment">% ybar  : parameterizing the Dirichlet boundary condition</span>
+pMin = [0;0.0005;0.4];
+pMax = [0.5;0.025;0.6];
+</pre><h2 id="3">Part I: computing the comparison points</h2><pre class="codeinput">nPointsPerDirection = 10;
+uComp = linspace(pMin(1),pMax(1),nPointsPerDirection);
+kappaComp = linspace(pMin(2),pMax(2),nPointsPerDirection);
+ybarcomp = linspace(pMin(3),pMax(3),nPointsPerDirection);
+nComp = nPointsPerDirection^3;
+wComp = zeros((Nx-2)*(Ny-2),nComp);
+pComp = zeros(3,nComp);
+count = 0;
+tic
+<span class="keyword">for</span> ip=1:nPointsPerDirection
+  <span class="keyword">for</span> jp=1:nPointsPerDirection
+     <span class="keyword">for</span> kp=1:nPointsPerDirection
+       count = count+1;
+       <span class="comment">%valeur des parametres PDE stock&eacute;s dans pcomp</span>
+       pComp(:,count) = [uComp(ip);kappaComp(jp);ybarcomp(kp)];
+       [A,b,TleftBC] = buildAdvectionDiffusionOperators(pComp(1,count),<span class="keyword">...</span>
+           pComp(2,count),pComp(3,count));
+       <span class="comment">% steady state resolution - inversion K*q=F A*wcomp=b</span>
+       wComp(:,count) = A\(b);
+     <span class="keyword">end</span>
+  <span class="keyword">end</span>
+<span class="keyword">end</span>
+disp(<span class="string">'Time needed for a Full-Case Solution (s)'</span>)
+t_FullCase = toc
+</pre><pre class="codeoutput">Time needed for a Full-Case Solution (s)
+
+t_FullCase =
+
+    9.6756
+
+</pre><h2 id="4">Part II: computing ROM</h2><pre class="codeinput">disp(<span class="string">'------------------------Greedy+POD------------------------------'</span>)
+nTest = 20;
+[eMax_POD, eAvg_POD, t_POD, wPOD,V]=POD(nTest,wComp, pComp, nComp, pMin,<span class="keyword">...</span>
+    pMax,nPointsPerDirection, 291);
+disp(<span class="string">'Average errors (%)'</span>)
+eMax_POD = eMax_POD*100
+eAvg_POD = eAvg_POD*100
+disp(<span class="string">'Average time needed (s)'</span>)
+t_POD_Avg = mean(t_POD)
+<span class="comment">% disp('----------------------------DMD--------------------------------')</span>
+<span class="comment">% nTest = 20;</span>
+<span class="comment">% [eMax_DMD, eAvg_DMD, t_DMD, wDMD]=DMD(nTest,wComp, pComp, nComp, pMin,...</span>
+<span class="comment">%     pMax,nPointsPerDirection, 291);</span>
+<span class="comment">% disp('Average errors (%)')</span>
+<span class="comment">% eMax_DMD = eMax_DMD*100</span>
+<span class="comment">% eAvg_DMD = eAvg_DMD*100</span>
+<span class="comment">% disp('Average time needed (s)')</span>
+<span class="comment">% t_DMD_Avg = mean(t_DMD)</span>
+</pre><pre class="codeoutput">------------------------Greedy+POD------------------------------
+Average errors (%)
+
+eMax_POD =
+
+    6.3458
+
+
+eAvg_POD =
+
+    0.9270
+
+Average time needed (s)
+
+t_POD_Avg =
+
+    1.4876
+
+</pre><h2 id="5">Graphs</h2><pre class="codeinput">T_Comp = zeros(Ny-2,Nx-2); T_POD = zeros(Ny-2,Nx-2);
+T_Comp(:) = wComp(:,291);
+T_Comp = [TleftBC,T_Comp];
+T_POD(:) = wPOD(:,1);
+T_POD = [TleftBC,T_POD];
+<span class="comment">% T_DMD = zeros(Ny-2,Nx-2);</span>
+<span class="comment">% T_DMD(:) = real(wDMD(:,1));</span>
+<span class="comment">% T_DMD = [TleftBC,T_DMD];</span>
+
+<span class="keyword">for</span> i=2:Ny-1
+     <span class="keyword">if</span> (y(i)&lt;Ly/3)
+        TleftBC(i-1,1) = Ti;
+     <span class="keyword">elseif</span> (y(i)&gt;2*Ly/3)
+        TleftBC(i-1,1) = Ti;
+     <span class="keyword">else</span>
+        TleftBC(i-1,1) = Ti+(Tleft-Ti)*(sin(pi*abs(y(i)-0.4)/(1/3))+1)/2;
+     <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+
+figInt = 0;
+<span class="comment">% Comp Plot</span>
+figInt = figInt + 1;
+figure(figInt);
+surface(x(1:end-1),y(2:end-1),T_Comp,<span class="string">'EdgeColor'</span>,<span class="string">'none'</span>,<span class="keyword">...</span>
+    <span class="string">'facecolor'</span>,<span class="string">'interp'</span>,<span class="string">'FaceLighting'</span>,<span class="string">'phong'</span>);
+axis <span class="string">tight</span>
+c = colorbar;
+h = findobj(gcf,<span class="string">'type'</span>,<span class="string">'line'</span>);
+set(h,<span class="string">'linewidth'</span>,2);
+set(h,<span class="string">'MarkerSize'</span>,10);
+interp = <span class="string">'none'</span>;
+titleStr = [<span class="string">'(vx = '</span>,num2str(pComp(1,291)),<span class="string">', vy = '</span>,num2str(0),<span class="keyword">...</span>
+    <span class="string">', k = '</span>,num2str(pComp(2,291)),<span class="string">', ybar = '</span>,num2str(pComp(3,291)),<span class="string">')'</span><span class="keyword">...</span>
+    ,<span class="string">' : Comp'</span>];
+title(titleStr,<span class="string">'Interpreter'</span>,interp,<span class="string">'fontweight'</span>,<span class="string">'b'</span>);
+xlabel(<span class="string">'x'</span>,<span class="string">'Interpreter'</span>,interp,<span class="string">'fontweight'</span>,<span class="string">'b'</span>);
+ylabel(<span class="string">'y'</span>,<span class="string">'Interpreter'</span>,interp,<span class="string">'fontweight'</span>,<span class="string">'b'</span>);
+gca = findall(gcf,<span class="string">'type'</span>,<span class="string">'axes'</span>,<span class="string">'visible'</span>,<span class="string">'on'</span>);
+set(gca,<span class="string">'FontSize'</span>,10);
+
+<span class="comment">% POD Plot</span>
+figInt = figInt + 1;
+figure(figInt);
+surface(x(1:end-1),y(2:end-1),T_POD,<span class="string">'EdgeColor'</span>,<span class="string">'none'</span>,<span class="keyword">...</span>
+    <span class="string">'facecolor'</span>,<span class="string">'interp'</span>,<span class="string">'FaceLighting'</span>,<span class="string">'phong'</span>);
+axis <span class="string">tight</span>
+c = colorbar;
+h = findobj(gcf,<span class="string">'type'</span>,<span class="string">'line'</span>);
+set(h,<span class="string">'linewidth'</span>,2);
+set(h,<span class="string">'MarkerSize'</span>,10);
+interp = <span class="string">'none'</span>;
+titleStr = [<span class="string">'(vx = '</span>,num2str(pComp(1,291)),<span class="string">', vy = '</span>,num2str(0),<span class="keyword">...</span>
+    <span class="string">', k = '</span>,num2str(pComp(2,291)),<span class="string">', ybar = '</span>,num2str(pComp(3,291)),<span class="string">')'</span><span class="keyword">...</span>
+    ,<span class="string">' : POD'</span>];
+title(titleStr,<span class="string">'Interpreter'</span>,interp,<span class="string">'fontweight'</span>,<span class="string">'b'</span>);
+xlabel(<span class="string">'x'</span>,<span class="string">'Interpreter'</span>,interp,<span class="string">'fontweight'</span>,<span class="string">'b'</span>);
+ylabel(<span class="string">'y'</span>,<span class="string">'Interpreter'</span>,interp,<span class="string">'fontweight'</span>,<span class="string">'b'</span>);
+gca = findall(gcf,<span class="string">'type'</span>,<span class="string">'axes'</span>,<span class="string">'visible'</span>,<span class="string">'on'</span>);
+set(gca,<span class="string">'FontSize'</span>,10);
+
+<span class="comment">% % POD MODES PLOT</span>
+<span class="comment">% POD1 = zeros(Ny-2,Nx-2); POD2 = zeros(Ny-2,Nx-2); POD3 = zeros(Ny-2,Nx-2);</span>
+<span class="comment">% POD4 = zeros(Ny-2,Nx-2); POD5 = zeros(Ny-2,Nx-2); POD6 = zeros(Ny-2,Nx-2);</span>
+<span class="comment">% POD7 = zeros(Ny-2,Nx-2); POD8 = zeros(Ny-2,Nx-2); POD9 = zeros(Ny-2,Nx-2);</span>
+<span class="comment">% POD1(:) = V(:,1); POD2(:) = V(:,2); POD3(:) = V(:,3);</span>
+<span class="comment">% POD4(:) = V(:,4); POD5(:) = V(:,5); POD6(:) = V(:,6);</span>
+<span class="comment">% POD7(:) = V(:,7); POD8(:) = V(:,8); POD9(:) = V(:,9);</span>
+<span class="comment">% figInt = figInt + 1;</span>
+<span class="comment">% figure(figInt);</span>
+<span class="comment">% subplot(3,3,1);</span>
+<span class="comment">% surface(x(2:end-1),y(2:end-1),POD1,'EdgeColor','none',...</span>
+<span class="comment">%     'facecolor','interp','FaceLighting','phong');</span>
+<span class="comment">% axis tight</span>
+<span class="comment">% c = colorbar;</span>
+<span class="comment">% h = findobj(gcf,'type','line');</span>
+<span class="comment">% set(h,'linewidth',2);</span>
+<span class="comment">% set(h,'MarkerSize',10);</span>
+<span class="comment">% interp = 'none';</span>
+<span class="comment">% title('POD: Vector 1','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% xlabel('x','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% ylabel('y','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% gca = findall(gcf,'type','axes','visible','on');</span>
+<span class="comment">% set(gca,'FontSize',10);</span>
+<span class="comment">% subplot(3,3,2);</span>
+<span class="comment">% surface(x(2:end-1),y(2:end-1),POD2,'EdgeColor','none',...</span>
+<span class="comment">%     'facecolor','interp','FaceLighting','phong');</span>
+<span class="comment">% axis tight</span>
+<span class="comment">% c = colorbar;</span>
+<span class="comment">% h = findobj(gcf,'type','line');</span>
+<span class="comment">% set(h,'linewidth',2);</span>
+<span class="comment">% set(h,'MarkerSize',10);</span>
+<span class="comment">% interp = 'none';</span>
+<span class="comment">% title('POD: Vector 2','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% xlabel('x','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% ylabel('y','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% gca = findall(gcf,'type','axes','visible','on');</span>
+<span class="comment">% set(gca,'FontSize',10);</span>
+<span class="comment">% subplot(3,3,3);</span>
+<span class="comment">% surface(x(2:end-1),y(2:end-1),POD3,'EdgeColor','none',...</span>
+<span class="comment">%     'facecolor','interp','FaceLighting','phong');</span>
+<span class="comment">% axis tight</span>
+<span class="comment">% c = colorbar;</span>
+<span class="comment">% h = findobj(gcf,'type','line');</span>
+<span class="comment">% set(h,'linewidth',2);</span>
+<span class="comment">% set(h,'MarkerSize',10);</span>
+<span class="comment">% interp = 'none';</span>
+<span class="comment">% title('POD: Vector 3','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% xlabel('x','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% ylabel('y','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% gca = findall(gcf,'type','axes','visible','on');</span>
+<span class="comment">% set(gca,'FontSize',10);</span>
+<span class="comment">% subplot(3,3,4);</span>
+<span class="comment">% surface(x(2:end-1),y(2:end-1),POD4,'EdgeColor','none',...</span>
+<span class="comment">%     'facecolor','interp','FaceLighting','phong');</span>
+<span class="comment">% axis tight</span>
+<span class="comment">% c = colorbar;</span>
+<span class="comment">% h = findobj(gcf,'type','line');</span>
+<span class="comment">% set(h,'linewidth',2);</span>
+<span class="comment">% set(h,'MarkerSize',10);</span>
+<span class="comment">% interp = 'none';</span>
+<span class="comment">% title('POD: Vector 4','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% xlabel('x','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% ylabel('y','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% gca = findall(gcf,'type','axes','visible','on');</span>
+<span class="comment">% set(gca,'FontSize',10);</span>
+<span class="comment">% subplot(3,3,5);</span>
+<span class="comment">% surface(x(2:end-1),y(2:end-1),POD5,'EdgeColor','none',...</span>
+<span class="comment">%     'facecolor','interp','FaceLighting','phong');</span>
+<span class="comment">% axis tight</span>
+<span class="comment">% c = colorbar;</span>
+<span class="comment">% h = findobj(gcf,'type','line');</span>
+<span class="comment">% set(h,'linewidth',2);</span>
+<span class="comment">% set(h,'MarkerSize',10);</span>
+<span class="comment">% interp = 'none';</span>
+<span class="comment">% title('POD: Vector 5','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% xlabel('x','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% ylabel('y','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% gca = findall(gcf,'type','axes','visible','on');</span>
+<span class="comment">% set(gca,'FontSize',10);</span>
+<span class="comment">% subplot(3,3,6);</span>
+<span class="comment">% surface(x(2:end-1),y(2:end-1),POD6,'EdgeColor','none',...</span>
+<span class="comment">%     'facecolor','interp','FaceLighting','phong');</span>
+<span class="comment">% axis tight</span>
+<span class="comment">% c = colorbar;</span>
+<span class="comment">% h = findobj(gcf,'type','line');</span>
+<span class="comment">% set(h,'linewidth',2);</span>
+<span class="comment">% set(h,'MarkerSize',10);</span>
+<span class="comment">% interp = 'none';</span>
+<span class="comment">% title('POD: Vector 6','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% xlabel('x','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% ylabel('y','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% gca = findall(gcf,'type','axes','visible','on');</span>
+<span class="comment">% set(gca,'FontSize',10);</span>
+<span class="comment">% subplot(3,3,7);</span>
+<span class="comment">% surface(x(2:end-1),y(2:end-1),POD7,'EdgeColor','none',...</span>
+<span class="comment">%     'facecolor','interp','FaceLighting','phong');</span>
+<span class="comment">% axis tight</span>
+<span class="comment">% c = colorbar;</span>
+<span class="comment">% h = findobj(gcf,'type','line');</span>
+<span class="comment">% set(h,'linewidth',2);</span>
+<span class="comment">% set(h,'MarkerSize',10);</span>
+<span class="comment">% interp = 'none';</span>
+<span class="comment">% title('POD: Vector 7','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% xlabel('x','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% ylabel('y','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% gca = findall(gcf,'type','axes','visible','on');</span>
+<span class="comment">% set(gca,'FontSize',10);</span>
+<span class="comment">% subplot(3,3,8);</span>
+<span class="comment">% surface(x(2:end-1),y(2:end-1),POD8,'EdgeColor','none',...</span>
+<span class="comment">%     'facecolor','interp','FaceLighting','phong');</span>
+<span class="comment">% axis tight</span>
+<span class="comment">% c = colorbar;</span>
+<span class="comment">% h = findobj(gcf,'type','line');</span>
+<span class="comment">% set(h,'linewidth',2);</span>
+<span class="comment">% set(h,'MarkerSize',10);</span>
+<span class="comment">% interp = 'none';</span>
+<span class="comment">% title('POD: Vector 8','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% xlabel('x','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% ylabel('y','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% gca = findall(gcf,'type','axes','visible','on');</span>
+<span class="comment">% set(gca,'FontSize',10);</span>
+<span class="comment">% subplot(3,3,9);</span>
+<span class="comment">% surface(x(2:end-1),y(2:end-1),POD9,'EdgeColor','none',...</span>
+<span class="comment">%     'facecolor','interp','FaceLighting','phong');</span>
+<span class="comment">% axis tight</span>
+<span class="comment">% c = colorbar;</span>
+<span class="comment">% h = findobj(gcf,'type','line');</span>
+<span class="comment">% set(h,'linewidth',2);</span>
+<span class="comment">% set(h,'MarkerSize',10);</span>
+<span class="comment">% interp = 'none';</span>
+<span class="comment">% title('POD: Vector 9','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% xlabel('x','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% ylabel('y','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% gca = findall(gcf,'type','axes','visible','on');</span>
+<span class="comment">% set(gca,'FontSize',10);</span>
+
+<span class="comment">% % DMD Plot</span>
+<span class="comment">% figInt = figInt + 1;</span>
+<span class="comment">% figure(figInt);</span>
+<span class="comment">% surface(x(1:end-1),y(2:end-1),T_DMD,'EdgeColor','none',...</span>
+<span class="comment">%     'facecolor','interp','FaceLighting','phong');</span>
+<span class="comment">% axis tight</span>
+<span class="comment">% c = colorbar;</span>
+<span class="comment">% h = findobj(gcf,'type','line');</span>
+<span class="comment">% set(h,'linewidth',2);</span>
+<span class="comment">% set(h,'MarkerSize',10);</span>
+<span class="comment">% interp = 'none';</span>
+<span class="comment">% titleStr = ['(vx = ',num2str(pComp(1,291)),', vy = ',num2str(0),...</span>
+<span class="comment">%     ', k = ',num2str(pComp(2,291)),', ybar = ',num2str(pComp(3,291)),')'...</span>
+<span class="comment">%     ,' : DMD'];</span>
+<span class="comment">% title(titleStr,'Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% xlabel('x','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% ylabel('y','Interpreter',interp,'fontweight','b');</span>
+<span class="comment">% gca = findall(gcf,'type','axes','visible','on');</span>
+<span class="comment">% set(gca,'FontSize',10);</span>
+</pre><img vspace="5" hspace="5" src="AdvectionDiffusion_01.png" alt=""> <img vspace="5" hspace="5" src="AdvectionDiffusion_02.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2017b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% STEADY ADVECTION-DIFFUSION PROBLEM
+% Method of snapshots for Greedy approach. Based on CME 345: Model
+% Reduction course of prof. David Amsallem (Stanford University)
+% Oriol Chandre Vila
+% May 2018
+
+clear all; close all; clc;
+warning('off');
+%% Definition of the problem (domain)
+global Nx Ny Lx Ly dx dy x y Ti Tleft;
+Nx = 61;
+Ny = 61;
+Lx = 1;
+Ly = 1;
+dx = Lx/(Nx-1);
+dy = Ly/(Ny-1);
+x = 0:dx:Lx;
+y = 0:dy:Ly;
+Ti = 300;
+Tleft = 950;
+
+% Parameters u [p(1,:)],kappa [p(2,:)], ybar [p(3,:)]
+% u     : advection speed in the x-direction
+% kappa : diffusivity coefficient
+% ybar  : parameterizing the Dirichlet boundary condition
+pMin = [0;0.0005;0.4];
+pMax = [0.5;0.025;0.6];
+
+%% Part I: computing the comparison points
+nPointsPerDirection = 10;
+uComp = linspace(pMin(1),pMax(1),nPointsPerDirection);
+kappaComp = linspace(pMin(2),pMax(2),nPointsPerDirection);
+ybarcomp = linspace(pMin(3),pMax(3),nPointsPerDirection);
+nComp = nPointsPerDirection^3;
+wComp = zeros((Nx-2)*(Ny-2),nComp);
+pComp = zeros(3,nComp);
+count = 0;
+tic
+for ip=1:nPointsPerDirection
+  for jp=1:nPointsPerDirection
+     for kp=1:nPointsPerDirection
+       count = count+1;
+       %valeur des parametres PDE stockés dans pcomp
+       pComp(:,count) = [uComp(ip);kappaComp(jp);ybarcomp(kp)];
+       [A,b,TleftBC] = buildAdvectionDiffusionOperators(pComp(1,count),...
+           pComp(2,count),pComp(3,count));
+       % steady state resolution - inversion K*q=F A*wcomp=b
+       wComp(:,count) = A\(b);
+     end
+  end
+end
+disp('Time needed for a Full-Case Solution (s)')
+t_FullCase = toc
+%% Part II: computing ROM
+disp('REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHGreedy+PODREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH')
+nTest = 20;
+[eMax_POD, eAvg_POD, t_POD, wPOD,V]=POD(nTest,wComp, pComp, nComp, pMin,...
+    pMax,nPointsPerDirection, 291);
+disp('Average errors (%)')
+eMax_POD = eMax_POD*100
+eAvg_POD = eAvg_POD*100
+disp('Average time needed (s)')
+t_POD_Avg = mean(t_POD)
+% disp('REPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHDMDREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASHREPLACE_WITH_DASH_DASH')
+% nTest = 20;
+% [eMax_DMD, eAvg_DMD, t_DMD, wDMD]=DMD(nTest,wComp, pComp, nComp, pMin,...
+%     pMax,nPointsPerDirection, 291);
+% disp('Average errors (%)')
+% eMax_DMD = eMax_DMD*100
+% eAvg_DMD = eAvg_DMD*100
+% disp('Average time needed (s)')
+% t_DMD_Avg = mean(t_DMD)
+%% Graphs
+T_Comp = zeros(Ny-2,Nx-2); T_POD = zeros(Ny-2,Nx-2); 
+T_Comp(:) = wComp(:,291);
+T_Comp = [TleftBC,T_Comp];
+T_POD(:) = wPOD(:,1);
+T_POD = [TleftBC,T_POD];
+% T_DMD = zeros(Ny-2,Nx-2);
+% T_DMD(:) = real(wDMD(:,1));
+% T_DMD = [TleftBC,T_DMD];
+
+for i=2:Ny-1
+     if (y(i)<Ly/3)
+        TleftBC(i-1,1) = Ti;
+     elseif (y(i)>2*Ly/3)
+        TleftBC(i-1,1) = Ti;
+     else
+        TleftBC(i-1,1) = Ti+(Tleft-Ti)*(sin(pi*abs(y(i)-0.4)/(1/3))+1)/2;
+     end 
+end
+
+
+figInt = 0;
+% Comp Plot
+figInt = figInt + 1;
+figure(figInt);
+surface(x(1:end-1),y(2:end-1),T_Comp,'EdgeColor','none',...
+    'facecolor','interp','FaceLighting','phong');
+axis tight
+c = colorbar;
+h = findobj(gcf,'type','line');
+set(h,'linewidth',2);
+set(h,'MarkerSize',10);
+interp = 'none';
+titleStr = ['(vx = ',num2str(pComp(1,291)),', vy = ',num2str(0),...
+    ', k = ',num2str(pComp(2,291)),', ybar = ',num2str(pComp(3,291)),')'...
+    ,' : Comp'];
+title(titleStr,'Interpreter',interp,'fontweight','b');
+xlabel('x','Interpreter',interp,'fontweight','b');
+ylabel('y','Interpreter',interp,'fontweight','b');
+gca = findall(gcf,'type','axes','visible','on');
+set(gca,'FontSize',10);
+
+% POD Plot
+figInt = figInt + 1;
+figure(figInt);
+surface(x(1:end-1),y(2:end-1),T_POD,'EdgeColor','none',...
+    'facecolor','interp','FaceLighting','phong');
+axis tight
+c = colorbar;
+h = findobj(gcf,'type','line');
+set(h,'linewidth',2);
+set(h,'MarkerSize',10);
+interp = 'none';
+titleStr = ['(vx = ',num2str(pComp(1,291)),', vy = ',num2str(0),...
+    ', k = ',num2str(pComp(2,291)),', ybar = ',num2str(pComp(3,291)),')'...
+    ,' : POD'];
+title(titleStr,'Interpreter',interp,'fontweight','b');
+xlabel('x','Interpreter',interp,'fontweight','b');
+ylabel('y','Interpreter',interp,'fontweight','b');
+gca = findall(gcf,'type','axes','visible','on');
+set(gca,'FontSize',10);
+
+% % POD MODES PLOT
+% POD1 = zeros(Ny-2,Nx-2); POD2 = zeros(Ny-2,Nx-2); POD3 = zeros(Ny-2,Nx-2);
+% POD4 = zeros(Ny-2,Nx-2); POD5 = zeros(Ny-2,Nx-2); POD6 = zeros(Ny-2,Nx-2);
+% POD7 = zeros(Ny-2,Nx-2); POD8 = zeros(Ny-2,Nx-2); POD9 = zeros(Ny-2,Nx-2);
+% POD1(:) = V(:,1); POD2(:) = V(:,2); POD3(:) = V(:,3);
+% POD4(:) = V(:,4); POD5(:) = V(:,5); POD6(:) = V(:,6);
+% POD7(:) = V(:,7); POD8(:) = V(:,8); POD9(:) = V(:,9);
+% figInt = figInt + 1;
+% figure(figInt);
+% subplot(3,3,1);
+% surface(x(2:end-1),y(2:end-1),POD1,'EdgeColor','none',...
+%     'facecolor','interp','FaceLighting','phong');
+% axis tight
+% c = colorbar;
+% h = findobj(gcf,'type','line');
+% set(h,'linewidth',2);
+% set(h,'MarkerSize',10);
+% interp = 'none';
+% title('POD: Vector 1','Interpreter',interp,'fontweight','b');
+% xlabel('x','Interpreter',interp,'fontweight','b');
+% ylabel('y','Interpreter',interp,'fontweight','b');
+% gca = findall(gcf,'type','axes','visible','on');
+% set(gca,'FontSize',10);
+% subplot(3,3,2);
+% surface(x(2:end-1),y(2:end-1),POD2,'EdgeColor','none',...
+%     'facecolor','interp','FaceLighting','phong');
+% axis tight
+% c = colorbar;
+% h = findobj(gcf,'type','line');
+% set(h,'linewidth',2);
+% set(h,'MarkerSize',10);
+% interp = 'none';
+% title('POD: Vector 2','Interpreter',interp,'fontweight','b');
+% xlabel('x','Interpreter',interp,'fontweight','b');
+% ylabel('y','Interpreter',interp,'fontweight','b');
+% gca = findall(gcf,'type','axes','visible','on');
+% set(gca,'FontSize',10);
+% subplot(3,3,3);
+% surface(x(2:end-1),y(2:end-1),POD3,'EdgeColor','none',...
+%     'facecolor','interp','FaceLighting','phong');
+% axis tight
+% c = colorbar;
+% h = findobj(gcf,'type','line');
+% set(h,'linewidth',2);
+% set(h,'MarkerSize',10);
+% interp = 'none';
+% title('POD: Vector 3','Interpreter',interp,'fontweight','b');
+% xlabel('x','Interpreter',interp,'fontweight','b');
+% ylabel('y','Interpreter',interp,'fontweight','b');
+% gca = findall(gcf,'type','axes','visible','on');
+% set(gca,'FontSize',10);
+% subplot(3,3,4);
+% surface(x(2:end-1),y(2:end-1),POD4,'EdgeColor','none',...
+%     'facecolor','interp','FaceLighting','phong');
+% axis tight
+% c = colorbar;
+% h = findobj(gcf,'type','line');
+% set(h,'linewidth',2);
+% set(h,'MarkerSize',10);
+% interp = 'none';
+% title('POD: Vector 4','Interpreter',interp,'fontweight','b');
+% xlabel('x','Interpreter',interp,'fontweight','b');
+% ylabel('y','Interpreter',interp,'fontweight','b');
+% gca = findall(gcf,'type','axes','visible','on');
+% set(gca,'FontSize',10);
+% subplot(3,3,5);
+% surface(x(2:end-1),y(2:end-1),POD5,'EdgeColor','none',...
+%     'facecolor','interp','FaceLighting','phong');
+% axis tight
+% c = colorbar;
+% h = findobj(gcf,'type','line');
+% set(h,'linewidth',2);
+% set(h,'MarkerSize',10);
+% interp = 'none';
+% title('POD: Vector 5','Interpreter',interp,'fontweight','b');
+% xlabel('x','Interpreter',interp,'fontweight','b');
+% ylabel('y','Interpreter',interp,'fontweight','b');
+% gca = findall(gcf,'type','axes','visible','on');
+% set(gca,'FontSize',10);
+% subplot(3,3,6);
+% surface(x(2:end-1),y(2:end-1),POD6,'EdgeColor','none',...
+%     'facecolor','interp','FaceLighting','phong');
+% axis tight
+% c = colorbar;
+% h = findobj(gcf,'type','line');
+% set(h,'linewidth',2);
+% set(h,'MarkerSize',10);
+% interp = 'none';
+% title('POD: Vector 6','Interpreter',interp,'fontweight','b');
+% xlabel('x','Interpreter',interp,'fontweight','b');
+% ylabel('y','Interpreter',interp,'fontweight','b');
+% gca = findall(gcf,'type','axes','visible','on');
+% set(gca,'FontSize',10);
+% subplot(3,3,7);
+% surface(x(2:end-1),y(2:end-1),POD7,'EdgeColor','none',...
+%     'facecolor','interp','FaceLighting','phong');
+% axis tight
+% c = colorbar;
+% h = findobj(gcf,'type','line');
+% set(h,'linewidth',2);
+% set(h,'MarkerSize',10);
+% interp = 'none';
+% title('POD: Vector 7','Interpreter',interp,'fontweight','b');
+% xlabel('x','Interpreter',interp,'fontweight','b');
+% ylabel('y','Interpreter',interp,'fontweight','b');
+% gca = findall(gcf,'type','axes','visible','on');
+% set(gca,'FontSize',10);
+% subplot(3,3,8);
+% surface(x(2:end-1),y(2:end-1),POD8,'EdgeColor','none',...
+%     'facecolor','interp','FaceLighting','phong');
+% axis tight
+% c = colorbar;
+% h = findobj(gcf,'type','line');
+% set(h,'linewidth',2);
+% set(h,'MarkerSize',10);
+% interp = 'none';
+% title('POD: Vector 8','Interpreter',interp,'fontweight','b');
+% xlabel('x','Interpreter',interp,'fontweight','b');
+% ylabel('y','Interpreter',interp,'fontweight','b');
+% gca = findall(gcf,'type','axes','visible','on');
+% set(gca,'FontSize',10);
+% subplot(3,3,9);
+% surface(x(2:end-1),y(2:end-1),POD9,'EdgeColor','none',...
+%     'facecolor','interp','FaceLighting','phong');
+% axis tight
+% c = colorbar;
+% h = findobj(gcf,'type','line');
+% set(h,'linewidth',2);
+% set(h,'MarkerSize',10);
+% interp = 'none';
+% title('POD: Vector 9','Interpreter',interp,'fontweight','b');
+% xlabel('x','Interpreter',interp,'fontweight','b');
+% ylabel('y','Interpreter',interp,'fontweight','b');
+% gca = findall(gcf,'type','axes','visible','on');
+% set(gca,'FontSize',10);
+
+% % DMD Plot
+% figInt = figInt + 1;
+% figure(figInt);
+% surface(x(1:end-1),y(2:end-1),T_DMD,'EdgeColor','none',...
+%     'facecolor','interp','FaceLighting','phong');
+% axis tight
+% c = colorbar;
+% h = findobj(gcf,'type','line');
+% set(h,'linewidth',2);
+% set(h,'MarkerSize',10);
+% interp = 'none';
+% titleStr = ['(vx = ',num2str(pComp(1,291)),', vy = ',num2str(0),...
+%     ', k = ',num2str(pComp(2,291)),', ybar = ',num2str(pComp(3,291)),')'...
+%     ,' : DMD'];
+% title(titleStr,'Interpreter',interp,'fontweight','b');
+% xlabel('x','Interpreter',interp,'fontweight','b');
+% ylabel('y','Interpreter',interp,'fontweight','b');
+% gca = findall(gcf,'type','axes','visible','on');
+% set(gca,'FontSize',10);
+##### SOURCE END #####
+--></body></html>
