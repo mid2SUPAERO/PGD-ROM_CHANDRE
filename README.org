@@ -13,8 +13,6 @@ This project focuses the use of Reduced Order Models to lighten the computationa
 
 1. Codes: all the live codes can be found inside.
 
-2. Documentation: all the bibliography used for the project can be found inside.
+2. Presentation: the support for the presentation can be found inside.
 
-3. Presentation: the support for the presentation can be found inside.
-
-4. Report: the editable and the PDF file of the written report can be found inside.
+3. Report: the editable and the PDF file of the written report can be found inside.
