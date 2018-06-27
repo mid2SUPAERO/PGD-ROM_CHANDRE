@@ -1,0 +1,231 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>main</title><meta name="generator" content="MATLAB 9.3"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2018-06-27"><meta name="DC.source" content="main.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">PGD CODE FOR POISSON EQUATION</a></li><li><a href="#2">Initialization of the problem</a></li><li><a href="#3">Offline step (PGD Solution)</a></li><li><a href="#4">Post-process</a></li></ul></div><h2 id="1">PGD CODE FOR POISSON EQUATION</h2><p>Reproduction of the cases of the book: "The Proper Generalizeed Decomposition for Advanced Numerical Solutions, a primer" (Authors: Chinesta, Keunings and Leygue).</p><p>Oriol CHANDRE VILA ISAE-SUPAERO, June 2018</p><pre class="codeinput">clear <span class="string">all</span>; close <span class="string">all</span>; clc;
+warning(<span class="string">'off'</span>);
+</pre><h2 id="2">Initialization of the problem</h2><pre class="codeinput"><span class="comment">% VARIABLES</span>
+<span class="keyword">global</span> coords ndim dy dx nen TOL TOL_TILDE;
+ndim = 2;
+TOL = 1.0E-08; <span class="comment">% Tolerance.</span>
+TOL_TILDE = 1.0E-05; <span class="comment">% PGD enrichment tolerance.</span>
+num_max_iter = 4; <span class="comment">% Max. # of functional pairs for the approximation.</span>
+
+<span class="comment">% GEOMETRY</span>
+X0 = 0; Xf = 2; Y0 = 0; Yf = 1; <span class="comment">% The domain: [0,2]x[0,1]</span>
+nen = 101; <span class="comment">% # elements for each direction</span>
+X = linspace(X0,Xf,nen); Y = linspace(Y0,Yf,nen);
+coords = [X' Y'];
+dx = coords(2,1) - coords(1,1);
+dy = coords(2,2) - coords(1,2);
+
+<span class="comment">% ALLOCATION OF MATRICES AND VECTORS</span>
+F = zeros(numel(coords(:,1)),1); <span class="comment">% Nodal values of spatial-X function F</span>
+G = zeros(numel(coords(:,2)),1); <span class="comment">% Nodal values of spatial-Y function G</span>
+<span class="comment">% These vectors are defined by: [#elem, #enrichment(n)]</span>
+
+<span class="comment">% SOURCE TERM IN SEPARATED FORM: f(x,y) = Fx(x)*Fy(y)</span>
+f = -1;
+f_source(:,1) = f*ones(nen,1); <span class="comment">% Fx(x)</span>
+f_source(:,2) = ones(nen,1); <span class="comment">% Fy(y)</span>
+</pre><h2 id="3">Offline step (PGD Solution)</h2><pre class="codeinput"><span class="comment">% SOLVING THE PROBLEM</span>
+[F,G] = PGD_Poisson_2D(num_max_iter);
+fprintf(1,<span class="string">'PGD offline Process exited normally\n'</span>);
+save(<span class="string">'WorkSpacePGD_ParametricedPoisson.mat'</span>);
+</pre><pre class="codeoutput">PGD offline Process exited normally
+</pre><h2 id="4">Post-process</h2><pre class="codeinput">figInt = 0;
+<span class="comment">% NORMALIZATION OF THE COMPUTED FUNCTIONS</span>
+plotF = bsxfun(@rdivide,F,sqrt(trapz(coords(:,1),F.^2)));
+plotG = bsxfun(@rdivide,G,sqrt(trapz(coords(:,2),G.^2)));
+
+<span class="comment">% F-i PLOT</span>
+figInt = figInt + 1;
+figure(figInt);
+set(gca,<span class="string">'fontsize'</span>,14);
+handles = plot(coords(:,1),plotF);
+legend(handles,cellfun(@(in) [<span class="string">'F_'</span> num2str(in) <span class="string">'(x)'</span>],<span class="keyword">...</span>
+    num2cell(1:num_max_iter),<span class="string">'uniformoutput'</span>,false));
+xlabel(<span class="string">'$x$'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>);
+ylabel(<span class="string">'$\frac{X_i(x)}{\|X_i(x)\| \,\,\, \,\,}$'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="keyword">...</span>
+    <span class="string">'fontsize'</span>,18);
+
+<span class="comment">% G-i PLOT</span>
+figInt = figInt + 1;
+figure(figInt);
+set(gca,<span class="string">'fontsize'</span>,14);
+handles = plot(coords(:,2),plotG);
+legend(handles,cellfun(@(in) [<span class="string">'G_'</span> num2str(in) <span class="string">'(y)'</span>],<span class="keyword">...</span>
+    num2cell(1:num_max_iter),<span class="string">'uniformoutput'</span>,false));
+xlabel(<span class="string">'$y$'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>);
+ylabel(<span class="string">'$\frac{G_i(y)}{\|G_i(y)\| \,\,\, \,\,}$'</span>,<span class="string">'interpreter'</span>,<span class="string">'latex'</span>,<span class="keyword">...</span>
+    <span class="string">'fontsize'</span>,18);
+
+<span class="comment">% SURFACE PLOT</span>
+figInt = figInt + 1;
+figure(figInt);
+set(gca,<span class="string">'fontsize'</span>,14);
+grid <span class="string">on</span>
+hold <span class="string">on</span>
+plot3(coords(:,1),zeros(size(coords(:,1))),plotF/50,<span class="string">'linewidth'</span>,1);
+plot3(zeros(size(coords(:,2))),coords(:,2),plotG/50,<span class="string">'linewidth'</span>,1);
+surf(coords(:,1),coords(:,2),G*F');
+colormap(<span class="string">'default'</span>);
+xlabel(<span class="string">'x'</span>); ylabel(<span class="string">'y'</span>);
+zlabel(<span class="string">'2D reconstructed PGD Solution: U_4(x,y)'</span>,<span class="string">'fontsize'</span>,10);
+view(3);
+</pre><img vspace="5" hspace="5" src="main_01.png" alt=""> <img vspace="5" hspace="5" src="main_02.png" alt=""> <img vspace="5" hspace="5" src="main_03.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2017b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% PGD CODE FOR POISSON EQUATION
+%
+% Reproduction of the cases of the book: "The Proper Generalizeed
+% Decomposition for Advanced Numerical Solutions, a primer"
+% (Authors: Chinesta, Keunings and Leygue).
+%
+% Oriol CHANDRE VILA
+% ISAE-SUPAERO, June 2018
+
+clear all; close all; clc;
+warning('off');
+
+%% Initialization of the problem
+
+% VARIABLES
+global coords ndim dy dx nen TOL TOL_TILDE;
+ndim = 2;
+TOL = 1.0E-08; % Tolerance.
+TOL_TILDE = 1.0E-05; % PGD enrichment tolerance.
+num_max_iter = 4; % Max. # of functional pairs for the approximation.
+
+% GEOMETRY
+X0 = 0; Xf = 2; Y0 = 0; Yf = 1; % The domain: [0,2]x[0,1]
+nen = 101; % # elements for each direction
+X = linspace(X0,Xf,nen); Y = linspace(Y0,Yf,nen);
+coords = [X' Y'];
+dx = coords(2,1) - coords(1,1);
+dy = coords(2,2) - coords(1,2);
+
+% ALLOCATION OF MATRICES AND VECTORS
+F = zeros(numel(coords(:,1)),1); % Nodal values of spatial-X function F
+G = zeros(numel(coords(:,2)),1); % Nodal values of spatial-Y function G
+% These vectors are defined by: [#elem, #enrichment(n)]
+
+% SOURCE TERM IN SEPARATED FORM: f(x,y) = Fx(x)*Fy(y)
+f = -1;
+f_source(:,1) = f*ones(nen,1); % Fx(x)
+f_source(:,2) = ones(nen,1); % Fy(y)
+
+%% Offline step (PGD Solution)
+
+% SOLVING THE PROBLEM
+[F,G] = PGD_Poisson_2D(num_max_iter);
+fprintf(1,'PGD offline Process exited normally\n');
+save('WorkSpacePGD_ParametricedPoisson.mat');
+
+%% Post-process
+
+figInt = 0;
+% NORMALIZATION OF THE COMPUTED FUNCTIONS
+plotF = bsxfun(@rdivide,F,sqrt(trapz(coords(:,1),F.^2)));
+plotG = bsxfun(@rdivide,G,sqrt(trapz(coords(:,2),G.^2)));
+
+% F-i PLOT
+figInt = figInt + 1;
+figure(figInt);
+set(gca,'fontsize',14);
+handles = plot(coords(:,1),plotF);
+legend(handles,cellfun(@(in) ['F_' num2str(in) '(x)'],...
+    num2cell(1:num_max_iter),'uniformoutput',false));
+xlabel('$x$','interpreter','latex');
+ylabel('$\frac{X_i(x)}{\|X_i(x)\| \,\,\, \,\,}$','interpreter','latex',...
+    'fontsize',18);
+
+% G-i PLOT
+figInt = figInt + 1;
+figure(figInt);
+set(gca,'fontsize',14);
+handles = plot(coords(:,2),plotG);
+legend(handles,cellfun(@(in) ['G_' num2str(in) '(y)'],...
+    num2cell(1:num_max_iter),'uniformoutput',false));
+xlabel('$y$','interpreter','latex');
+ylabel('$\frac{G_i(y)}{\|G_i(y)\| \,\,\, \,\,}$','interpreter','latex',...
+    'fontsize',18);
+
+% SURFACE PLOT
+figInt = figInt + 1;
+figure(figInt);
+set(gca,'fontsize',14);
+grid on
+hold on
+plot3(coords(:,1),zeros(size(coords(:,1))),plotF/50,'linewidth',1);
+plot3(zeros(size(coords(:,2))),coords(:,2),plotG/50,'linewidth',1);
+surf(coords(:,1),coords(:,2),G*F');
+colormap('default');
+xlabel('x'); ylabel('y');
+zlabel('2D reconstructed PGD Solution: U_4(x,y)','fontsize',10);
+view(3);
+##### SOURCE END #####
+--></body></html>
