@@ -1,5 +1,4 @@
-#+TITLE: Structural Wing Model Reduction in Fluid-Structure Interactions
-#+OPTIONS: toc:nil num:nil
+## Structural Wing Model Reduction in Fluid-Structure Interactions
 
 Author: Oriol CHANDRE-VILA.
 
@@ -9,7 +8,11 @@ ISAE-SUPAERO, 2018.
 
 Département Mécanique des Structures et Matériaux (DMSM) et ONERA.
 
+### Synthesis
+
 This project focuses the use of Reduced Order Models to lighten the computational requirements in fluid-structure problem simulations. Proper Orthogonal Decomposition and Proper Generalized Decomposition methodologies are studied and applied in a Steady Advection-Diffusion problem for 2D and non-homogeneous Dirichlet boundary conditions. Thanks to the above-mentioned approaches, important reductions in computing time have been achieved.
+
+### In the GitHub...
 
 1. Codes: all the live codes can be found inside.
 
